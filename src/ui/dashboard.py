@@ -133,15 +133,37 @@ if 'result' in st.session_state:
              st.success(f"Risk Status: {result.get('risk_status')}")
              
              # Manual Execution Button
+             # Manual Execution Button
              if st.button("🚀 Execute Trade on Kite"):
                  if kite_client:
-                      place_response = kite_client.place_order(order)
-                      if "order_id" in place_response:
-                           st.success(f"Order Placed! ID: {place_response['order_id']}")
-                      else:
-                           st.error(f"Failed to place order: {place_response}")
+                      order_status_log = []
+                      for leg in legs:
+                          # Extract details from leg
+                          symbol = leg['instrument']
+                          quantity = leg['quantity']
+                          # Determine transaction type (Short Strategy = SELL)
+                          # NOTE: The 'action' key in leg might be 'SELL' or 'BUY'
+                          txn_type = leg.get('action', 'SELL') 
+                          
+                          response = kite_client.place_order(
+                              symbol=symbol,
+                              transaction_type=txn_type,
+                              quantity=quantity,
+                              order_type="MARKET"
+                          )
+                          
+                          if isinstance(response, str): # Verify if we got an ID (mock or real)
+                               order_status_log.append(f"✅ {symbol}: Placed ({response})")
+                          else:
+                               order_status_log.append(f"❌ {symbol}: Failed")
+                      
+                      for log in order_status_log:
+                          if "Failed" in log:
+                              st.error(log)
+                          else:
+                              st.success(log)
                  else:
-                      st.warning("Kite Client not initialized. Check API Keys.")
+                     st.warning("Kite Client not initialized. Check API Keys.")
 
     with tab3:
         st.subheader("Payoff Diagram")

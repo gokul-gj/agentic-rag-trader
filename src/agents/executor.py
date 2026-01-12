@@ -53,15 +53,17 @@ def execute_order(state: Dict[str, Any]) -> Dict[str, Any]:
             {
                 "type": "CE",
                 "strike": call_strike,
-                "symbol": ce_symbol,
-                "qty": 50,
+                "instrument": ce_symbol,
+                "quantity": 50,
+                "action": "SELL",
                 "order_id": None # To be filled after execution
             },
             {
                 "type": "PE",
                 "strike": put_strike,
-                "symbol": pe_symbol,
-                "qty": 50,
+                "instrument": pe_symbol,
+                "quantity": 50,
+                "action": "SELL",
                 "order_id": None
             }
         ],
