@@ -37,12 +37,21 @@ def market_scanner(state: Dict[str, Any]) -> Dict[str, Any]:
     
     print(f"Fetched Data: Spot={spot}, IV={iv} (VIX)")
     
+    # Fetch Option Chain
+    try:
+        from src.integration.option_chain_client import fetch_option_chain
+        chain_data = fetch_option_chain()
+    except Exception as e:
+        print(f"Option Chain Error: {e}")
+        chain_data = {}
+
     # Mock Data for other fields if not available
     market_data = {
         "symbol": "NIFTY",
         "spot_price": spot,
         "iv": iv, # Using real VIX
-        "days_to_expiry": 5
+        "days_to_expiry": 5,
+        "option_chain": chain_data # Inject option chain
     }
     
     # The original logic had an IV check. With hardcoded IV=15, this check would never trigger.
