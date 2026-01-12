@@ -1,6 +1,6 @@
 # 🤖 Hybrid Agentic RAG Trading System
 
-A cutting-edge, autonomous trading system that combines **Agentic AI** with **Retrieval-Augmented Generation (RAG)** to execute sigma-based option selling strategies (Strangles & Straddles) on the Indian Market (Nifty 50).
+An autonomous trading system that combines **Agentic AI** with **Retrieval-Augmented Generation (RAG)** to execute sigma-based option selling strategies (Strangles & Straddles) on the Indian Market (Nifty 50).
 
 ---
 
@@ -102,5 +102,18 @@ This allows you to update strategy behavior simply by **uploading a new PDF**, w
 
 ---
 
-## 🛡️ License
-Private & Confidential.
+## 📸 Interface Preview
+
+### Strategist Agent
+![Strategist Agent Reasoning](assets/strategist_reasoning.png)
+*The Strategist Agent analyzes market data and selects the optimal strategy (e.g., Short Straddle) with detailed rationale.*
+
+### Executor Plan & Greeks
+![Executor Plan](assets/execution_plan.png)
+*The Executor Agent calculates precise strike prices and Greeks (Delta, Theta, Vega) before execution.*
+
+### Interactive Payoff Diagram
+![Payoff Diagram](assets/payoff_diagram.png)
+*Real-time visualization of the strategy's payoff curve with 1-Sigma and 2-Sigma safety ranges.*
+
+---
