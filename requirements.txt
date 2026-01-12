@@ -1,0 +1,17 @@
+langchain
+langchain-community
+langchain-chroma
+chromadb
+pypdf
+langgraph
+sentence-transformers
+numpy
+pandas
+fpdf
+kiteconnect
+openai
+streamlit
+plotly
+scipy
+yfinance
+python-dotenv
