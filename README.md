@@ -6,7 +6,9 @@ An autonomous trading system that combines **Agentic AI** with **Retrieval-Augme
 
 ## 🚀 Key Features
 
-*   **Hybrid Intelligence**: Combines LLM reasoning (OpenAI) with deterministic Quant logic (Black-Scholes).
+*   **Hybrid Multi-Model Intelligence**: Orchestrates specialized LLMs for different tasks to reduce bias and improve performance:
+    *   **OpenAI GPT-4**: For high-precision strategy selection and rigid rule synthesis.
+    *   **Llama 3 (via Groq)**: For high-speed market research synthesis and risk auditing ("Second Opinion").
 *   **RAG-Powered Strategy**: Retrieves strategy rules and constraints from a knowledge base (PDFs/Docs) rather than hardcoded logic.
 *   **Multi-Agent Architecture**: Discrete agents for Research, Strategy, Execution, and Risk Management orchestrated via **LangGraph**.
 *   **Real-Time Data**:
@@ -23,18 +25,21 @@ The system operates as a **Directed Acyclic Graph (DAG)** where state is passed 
 
 ### 1. The Workflow
 1.  **Market Scanner**: Fetches live Nifty Spot (`^NSEI`) and India VIX (`^INDIAVIX`). Checks key entry conditions (Time, Volatility).
-2.  **Market Researcher**: Scours the web for live market sentiment (e.g., "RBI Policy Impact", "Global Cues").
-3.  **Position Monitor**: Checks existing positions for P&L thresholds and adjustment triggers.
+2.  **Market Researcher**:
+    *   **Scrapes** live headlines from MoneyControl, MarketWatch, and Google using `googlesearch-python` and `BeautifulSoup`.
+    *   **Synthesizes** a market sentiment report using **Llama 3 (via Groq)**.
+3.  **Position Monitor**: Continually analyzes open positions using **Llama 3** to detect if news or price logic requires an "Adjustment" (Roll/Hedge) or "Exit".
 4.  **Strategist (The Brain)**:
     *   Queries **ChromaDB** (Vector Store) for *Strategy Rules* (e.g., "Short Strangle Entry Criteria").
-    *   Synthesizes Market Data + News + Rules using **OpenAI GPT-4**.
-    *   Decides: *Short Strangle* vs *Short Straddle*.
+    *   Synthesizes Market Data + Sentiment + Rules using **OpenAI GPT-4**.
+    *   Decides: *Short Strangle* vs *Short Straddle* with strict JSON-based reasoning.
 5.  **Executor (The Hands)**:
     *   Calculates exact Strike Prices based on Sigma (Standard Deviation) bounds.
     *   Generates the Order Plan (Legs, Quantity, Order Type).
 6.  **Risk Manager (The Reviewer)**:
-    *   Validates the order against safety checks (Margin, Delta Exposure, Event Risk).
-    *   **Approves** or **Rejects** the trade.
+    *   Acts as a "Second Opinion" auditor using **Llama 3**.
+    *   Validates the proposed order against safety checks (Margin, Delta Exposure, Event Risk).
+    *   **Approves** or **Rejects** the trade based on independent reasoning.
 
 ---
 
@@ -73,6 +78,7 @@ This allows you to update strategy behavior simply by **uploading a new PDF**, w
     Create a `.env` file in the root directory:
     ```env
     OPENAI_API_KEY=sk-xxxx
+    GROQ_API_KEY=gsk_xxxx  # Optional: For Llama 3 Speed Boost
     KITE_API_KEY=xxxx
     KITE_API_SECRET=xxxx
     KITE_REDIRECT_URL=http://localhost:8000/callback
