@@ -18,6 +18,7 @@ def analyze_strategy(state: Dict[str, Any]) -> Dict[str, Any]:
     news = lookup_strategy_rules.invoke("market news")
     
     user_override = state.get("user_selected_strategy")
+    recommended_sigma = 1.0  # Default sigma value
     
     if user_override:
          print(f"--- [Strategist] Manual Override Active: {user_override} ---")
@@ -31,9 +32,10 @@ def analyze_strategy(state: Dict[str, Any]) -> Dict[str, Any]:
         system_prompt = (
             "You are an expert options strategist. "
             "Decide between 'Short Strangle' (Range Bound) and 'Short Straddle' (Low Volatility, Max Premium). "
-            "Output JSON only: {'strategy': 'Short Strangle' or 'Short Straddle', 'rationale': '...', 'constraints': '...'}"
+            "Also recommend the sigma multiplier for strike selection (1.0 for standard, 1.5 for conservative, 2.0 for very conservative). "
+            "Output JSON only: {'strategy': 'Short Strangle' or 'Short Straddle', 'recommended_sigma': 1.0-2.0, 'rationale': '...', 'constraints': '...'}"
         )
-        user_prompt = f"Market IV: {iv}%\nStrangle Rules: {strangle_rules}\nStraddle Rules: {straddle_rules}\nNews: {news}\n\nRecommmend the best strategy."
+        user_prompt = f"Market IV: {iv}%\nStrangle Rules: {strangle_rules}\nStraddle Rules: {straddle_rules}\nNews: {news}\n\nRecommend the best strategy and sigma multiplier."
         
         llm_response = query_llm(system_prompt, user_prompt)
         
@@ -42,8 +44,20 @@ def analyze_strategy(state: Dict[str, Any]) -> Dict[str, Any]:
             strategy = "Short Strangle"
             rationale = f"Defaulting to safer strategy due to LLM error. IV is {iv}%."
             constraints = strangle_rules
+            recommended_sigma = 1.0  # Conservative default on error
         else:
-            # We try to extract JSON, here we just trust the string contains the decision for demo
+            # Try to parse JSON response for sigma
+            import json
+            recommended_sigma = 1.0
+            try:
+                # Attempt to parse JSON
+                llm_json = json.loads(llm_response)
+                recommended_sigma = llm_json.get('recommended_sigma', 1.0)
+            except:
+                # Fallback if LLM doesn't return valid JSON
+                pass
+            
+            # Extract strategy from response
             if "Straddle" in llm_response:
                 strategy = "Short Straddle"
                 constraints = straddle_rules
@@ -57,7 +71,8 @@ def analyze_strategy(state: Dict[str, Any]) -> Dict[str, Any]:
         "rationale": rationale,
         "constraints": constraints,
         "market_sentiment": news,
-        "llm_analysis": llm_response
+        "llm_analysis": llm_response,
+        "recommended_sigma": recommended_sigma  # Pass sigma to executor
     }
     
     return {"strategy_decision": strategy_decision}

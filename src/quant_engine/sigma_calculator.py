@@ -43,3 +43,21 @@ def get_strangle_strikes(spot: float, iv: float, days: int, sigma_mult: float = 
 def get_atm_strike(spot: float) -> int:
     """Returns the At-The-Money (ATM) strike."""
     return round_to_nearest(spot)
+
+def find_closest_available_strike(target_strike: float, available_strikes: list, base: int = 50) -> int:
+    """
+    Finds the closest available strike from a list of available strikes.
+    Args:
+        target_strike: Calculated ideal strike
+        available_strikes: List of actual strikes available in option chain
+        base: Strike interval (50 for Nifty, 100 for BankNifty)
+    Returns:
+        Closest available strike
+    """
+    if not available_strikes:
+        # Fallback to rounding if no chain available
+        return round_to_nearest(target_strike, base)
+    
+    # Find closest strike in available list
+    closest = min(available_strikes, key=lambda x: abs(x - target_strike))
+    return int(closest)

@@ -78,7 +78,7 @@ This allows you to update strategy behavior simply by **uploading a new PDF**, w
     Create a `.env` file in the root directory:
     ```env
     OPENAI_API_KEY=sk-xxxx
-    GROQ_API_KEY=gsk_xxxx  # Optional: For Llama 3 Speed Boost
+    GROQ_API_KEY=gsk_xxxx
     KITE_API_KEY=xxxx
     KITE_API_SECRET=xxxx
     KITE_REDIRECT_URL=http://localhost:8000/callback
