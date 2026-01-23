@@ -23,7 +23,8 @@ def validate_order(state: Dict[str, Any]) -> Dict[str, Any]:
         "1. Do not sell options if IV is extremely low (<11%) as risk/reward is poor. "
         "2. Reject trades if Market Sentiment is 'Volatile' but the strategy is 'Short Strangle' (delta risk). "
         "3. Ensure the trade makes sense given the Nifty Spot price. "
-        "Output JSON: {'decision': 'approved' or 'rejected', 'reason': '...'}"
+        "Output JSON ONLY. Format: {\"decision\": \"approved\" or \"rejected\", \"reason\": \"...\"}. "
+        "Do NOT include any text, markdown, or thoughts outside the JSON object."
     )
     
     user_prompt = f"""
@@ -45,11 +46,33 @@ def validate_order(state: Dict[str, Any]) -> Dict[str, Any]:
         
         print(f"Risk Manager Thoughts: {llm_response}")
         
-        # Simple parsing logic (robustness would require JSON parser)
-        decision = "approved"
-        if "rejected" in llm_response.lower():
-            decision = "rejected"
+        # Robust JSON parsing with fallback
+        decision = "approved"  # Default to approved (conservative)
+        
+        try:
+            # Try to parse JSON response
+            import re
+            clean_response = re.sub(r'```json\s*|\s*```', '', llm_response)
+            llm_json = json.loads(clean_response)
             
+            decision = llm_json.get('decision', 'approved').lower()
+            reason = llm_json.get('reason', llm_response)
+            
+            print(f"✅ Parsed Risk Decision: {decision}")
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            # Fallback to keyword matching
+            print(f"⚠️ JSON parsing failed, using keyword fallback: {e}")
+            
+            if re.search(r'\brejected?\b', llm_response, re.IGNORECASE):
+                decision = "rejected"
+            elif re.search(r'\bapproved?\b', llm_response, re.IGNORECASE):
+                decision = "approved"
+            else:
+                # If unclear, be conservative and reject
+                print("⚠️ [SAFETY] Could not determine decision clearly. Rejecting for safety.")
+                decision = "rejected"
+                
         return {
             "risk_status": decision,
             "risk_analysis": llm_response

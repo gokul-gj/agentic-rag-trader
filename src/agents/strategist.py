@@ -39,32 +39,69 @@ def analyze_strategy(state: Dict[str, Any]) -> Dict[str, Any]:
         
         llm_response = query_llm(system_prompt, user_prompt)
         
-        # Simple parsing (Mock fallback if LLM fail)
+        # Enhanced parsing with robust JSON extraction
         if "Error" in llm_response:
+            print("⚠️ [FALLBACK] LLM Error - Using default Strangle strategy")
             strategy = "Short Strangle"
             rationale = f"Defaulting to safer strategy due to LLM error. IV is {iv}%."
             constraints = strangle_rules
             recommended_sigma = 1.0  # Conservative default on error
         else:
-            # Try to parse JSON response for sigma
+            # Try to parse JSON response
             import json
-            recommended_sigma = 1.0
-            try:
-                # Attempt to parse JSON
-                llm_json = json.loads(llm_response)
-                recommended_sigma = llm_json.get('recommended_sigma', 1.0)
-            except:
-                # Fallback if LLM doesn't return valid JSON
-                pass
+            import re
             
-            # Extract strategy from response
-            if "Straddle" in llm_response:
-                strategy = "Short Straddle"
+            strategy = None
+            rationale = llm_response
+            recommended_sigma = 1.0
+            
+            try:
+                # Attempt to parse as JSON
+                # Remove markdown code blocks if present
+                clean_response = re.sub(r'```json\s*|\s*```', '', llm_response)
+                llm_json = json.loads(clean_response)
+                
+                # Extract values from JSON
+                strategy = llm_json.get('strategy')
+                recommended_sigma = float(llm_json.get('recommended_sigma', 1.0))
+                rationale = llm_json.get('rationale', llm_response)
+                
+                print(f"✅ Successfully parsed JSON: strategy={strategy}, sigma={recommended_sigma}")
+                
+            except (json.JSONDecodeError, ValueError) as e:
+                # Fallback to regex extraction
+                print(f"⚠️ JSON parsing failed, using regex fallback: {e}")
+                
+                # Extract strategy using regex (more robust)
+                if re.search(r'\bshort\s+straddle\b', llm_response, re.IGNORECASE):
+                    strategy = "Short Straddle"
+                elif re.search(r'\bshort\s+strangle\b', llm_response, re.IGNORECASE):
+                    strategy = "Short Strangle"
+                elif re.search(r'\bstraddle\b', llm_response, re.IGNORECASE):
+                    strategy = "Short Straddle"
+                elif re.search(r'\bstrangle\b', llm_response, re.IGNORECASE):
+                    strategy = "Short Strangle"
+                
+                # Extract sigma if mentioned
+                sigma_match = re.search(r'sigma[:\s]*(\d+\.?\d*)', llm_response, re.IGNORECASE)
+                if sigma_match:
+                    try:
+                        recommended_sigma = float(sigma_match.group(1))
+                        print(f"✅ Extracted sigma from text: {recommended_sigma}")
+                    except ValueError:
+                        pass
+            
+            # Final check: if strategy still not determined, default safely
+            if not strategy:
+                print(f"⚠️ [FALLBACK] Could not determine strategy from LLM response. Defaulting to Strangle.")
+                print(f"LLM Response excerpt: {llm_response[:200]}")
+                strategy = "Short Strangle"
+            
+            # ✅ FIXED: Dynamically load constraints based on FINAL strategy decision
+            if strategy == "Short Straddle":
                 constraints = straddle_rules
             else:
-                strategy = "Short Strangle"
                 constraints = strangle_rules
-            rationale = llm_response
 
     strategy_decision = {
         "strategy": strategy,

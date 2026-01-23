@@ -4,6 +4,10 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
+import warnings
+# Suppress LangChain deprecation warnings specifically
+warnings.filterwarnings("ignore", category=UserWarning, module="langchain")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain")
 
 # Define paths
 DATA_DIR = os.path.join(os.getcwd(), 'data')

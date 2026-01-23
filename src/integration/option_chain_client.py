@@ -24,8 +24,11 @@ def fetch_option_chain(symbol="NIFTY"):
         expirations = ticker.options
         
         if not expirations or len(expirations) == 0:
-            print("⚠️ No option data available from yfinance, using generated data")
-            return generate_mock_chain(symbol)
+            print("⚠️ No option data available from yfinance. Falling back to SIMULATED/MOCK data.")
+            mock_data = generate_mock_chain(symbol)
+            mock_data["is_simulated"] = True
+            mock_data["warning"] = "Data is SIMULATED. Do not use for real trading."
+            return mock_data
         
         # Use the first (nearest) expiration
         expiry_date_str = expirations[0]

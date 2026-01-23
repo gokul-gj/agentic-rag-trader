@@ -37,8 +37,13 @@ def perform_market_research(state: Dict[str, Any]) -> Dict[str, Any]:
         # Helper to scrape
         def scrape_headlines(url, source_name):
             try:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                response = requests.get(url, headers=headers, timeout=5)
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Referer': 'https://www.google.com/'
+                }
+                response = requests.get(url, headers=headers, timeout=10)
                 soup = BeautifulSoup(response.content, 'lxml')
                 
                 # Simple logic to find main headings (this varies by site and is brittle)
@@ -74,12 +79,13 @@ def perform_market_research(state: Dict[str, Any]) -> Dict[str, Any]:
         if headlines:
             raw_data += "\nDirect Site Headlines:\n" + "\n".join([f"- {h}" for h in headlines])
             
-        if not raw_data:
-             raw_data = "Could not fetch live data."
-             
+        if not raw_data or "Could not fetch" in raw_data:
+             print("⚠️ Market research failed. Returning 'Data Unavailable' to prevent hallucination.")
+             return {"research_data": "Data Unavailable (Scraping Failed)"}
+
     except Exception as e:
         print(f"Market Research Error: {e}")
-        raw_data = f"Error performing market research: {str(e)}"
+        return {"research_data": f"Error: {str(e)}"}
 
     print(f"Raw Research Data (first 200 chars): {raw_data[:200]}...")
     
@@ -90,6 +96,7 @@ def perform_market_research(state: Dict[str, Any]) -> Dict[str, Any]:
         "Your job is to summarize the provided raw news headlines and search results into a concise market sentiment report. "
         "Focus on: Volatility (VIX), FII/DII activity, Global Cues, and Major Domestic Events. "
         "Conclude with a Sentiment Tag: 'Bullish', 'Bearish', 'Neutral', or 'Volatile'."
+        "If the raw data is empty or insufficient, return 'Data Unavailable'."
     )
     user_prompt = f"Raw Market Data:\n{raw_data}"
     
@@ -98,7 +105,7 @@ def perform_market_research(state: Dict[str, Any]) -> Dict[str, Any]:
         research_summary = query_llm(system_prompt, user_prompt, provider="groq", model="llama-3.3-70b-versatile")
     except Exception as e:
         print(f"LLM Summarization Failed: {e}")
-        research_summary = f"LLM Error. Raw Data: {raw_data}"
+        research_summary = f"LLM Error. Raw Data length: {len(raw_data)}"
     
     print(f"LLM Summary: {research_summary}")
     

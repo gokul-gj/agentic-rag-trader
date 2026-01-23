@@ -13,10 +13,11 @@ client_groq = None
 try:
     if os.environ.get("OPENAI_API_KEY"):
         client_openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        print("✅ [LLM Client] OpenAI Client Initialized Successfully")
     else:
-        print("Warning: OPENAI_API_KEY not found.")
+        print("❌ [LLM Client] OPENAI_API_KEY not found in environment")
 except Exception as e:
-    print(f"Warning: OpenAI Client Init Failed: {e}")
+    print(f"❌ [LLM Client] OpenAI Client Init Failed: {e}")
 
 # 2. Setup Groq (for Llama 3)
 try:
@@ -25,11 +26,11 @@ try:
             base_url="https://api.groq.com/openai/v1",
             api_key=os.environ.get("GROQ_API_KEY")
         )
-        print("--- [LLM Client] Groq Client Initialized (Llama 3 Ready) ---")
+        print("✅ [LLM Client] Groq Client Initialized Successfully (Llama 3 Ready)")
     else:
-        print("Info: GROQ_API_KEY not found. Llama 3 requests will fallback to OpenAI.")
+        print("⚠️ [LLM Client] GROQ_API_KEY not found. Llama 3 requests will fallback to OpenAI.")
 except Exception as e:
-    print(f"Warning: Groq Client Init Failed: {e}")
+    print(f"❌ [LLM Client] Groq Client Init Failed: {e}")
 
 def query_llm(system_prompt: str, user_prompt: str, model: str = None, provider: str = "openai") -> str:
     """
@@ -57,13 +58,19 @@ def query_llm(system_prompt: str, user_prompt: str, model: str = None, provider:
             active_model = "gpt-4-turbo" 
             
     if not active_client:
-        return "Error: No LLM Client initialized (Check API Keys)."
+        error_msg = "❌ No LLM Client initialized. Check that API keys are set in .env file."
+        print(error_msg)
+        return f"Error: {error_msg}"
 
     if not active_model:
          active_model = "gpt-4-turbo"
 
     try:
-        print(f"--- [LLM Client] Querying {provider.upper() if active_client == client_groq else 'OPENAI'} : {active_model} ---")
+        provider_name = "GROQ" if active_client == client_groq else "OPENAI"
+        print(f"🔄 [LLM Client] Querying {provider_name}: {active_model}")
+        print(f"   System: {system_prompt[:80]}...")
+        print(f"   User: {user_prompt[:100]}...")
+        
         response = active_client.chat.completions.create(
             model=active_model,
             messages=[
@@ -72,11 +79,16 @@ def query_llm(system_prompt: str, user_prompt: str, model: str = None, provider:
             ],
             temperature=0.7
         )
-        return response.choices[0].message.content
+        
+        result = response.choices[0].message.content
+        print(f"✅ [LLM Client] Received response ({len(result)} chars)")
+        return result
+        
     except Exception as e:
-        print(f"Error calling LLM ({active_model}): {str(e)}")
-        # If Groq fails, maybe try OpenAI fallback automatically? 
-        # For now, just return error to avoid infinite loops or cost surprises.
+        error_details = f"❌ Error calling LLM ({active_model}): {str(e)}"
+        print(error_details)
+        print(f"   Error Type: {type(e).__name__}")
+        # Return error to prevent silent failures
         return f"Error calling LLM: {str(e)}"
 
 def mock_query_llm(system_prompt: str, user_prompt: str) -> str:

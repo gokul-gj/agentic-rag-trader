@@ -85,27 +85,54 @@ def execute_order(state: Dict[str, Any]) -> Dict[str, Any]:
     # We DO NOT execute here anymore. We return the plan for user approval.
     
     order = {
-        "action": "SELL",
-        "strategy": strategy_name,  # Use dynamic strategy name (fix bug)
-        "legs": [
+        "action": "ADJUST" if state.get("adjustment_needed") else "OPEN",
+        "strategy": strategy_name,
+        "legs": [],
+        "analysis": strikes
+    }
+
+    # If adjustment needed, close existing position first (Mock logic for demo)
+    if state.get("adjustment_needed"):
+        print("--- [Executor] Generating CLOSE orders for existing position ---")
+        # In real system, fetch actual open positions here
+        # For demo, we close a hypothetical previous position
+        order["legs"].extend([
+            {
+                "type": "CE",
+                "strike": call_strike, # Assuming we are rolling same strikes for simplicity in demo
+                "instrument": "EXISTING_CE",
+                "quantity": lot_size,
+                "action": "BUY", # Close Short
+                "order_id": "CLOSE_LEG_1"
+            },
+            {
+                "type": "PE",
+                "strike": put_strike,
+                "instrument": "EXISTING_PE",
+                "quantity": lot_size,
+                "action": "BUY", # Close Short
+                "order_id": "CLOSE_LEG_2"
+            }
+        ])
+
+    # Add New Opening Legs
+    order["legs"].extend([
             {
                 "type": "CE",
                 "strike": call_strike,
                 "instrument": ce_symbol,
-                "quantity": lot_size,  # Dynamic lot size from market data
+                "quantity": lot_size,
                 "action": "SELL",
-                "order_id": None # To be filled after execution
+                "order_id": None
             },
             {
                 "type": "PE",
                 "strike": put_strike,
                 "instrument": pe_symbol,
-                "quantity": 50,
+                "quantity": lot_size,
                 "action": "SELL",
                 "order_id": None
             }
-        ],
-        "analysis": strikes
-    }
+    ])
     
     return {"final_order": order}
